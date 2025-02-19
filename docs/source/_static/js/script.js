@@ -1,53 +1,56 @@
-// Theme Switching
-const themeToggle = document.getElementById('theme-toggle');
-let currentTheme = 'light';
-
-function toggleTheme() {
-    currentTheme = currentTheme === 'light' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', currentTheme);
-}
-
-themeToggle.addEventListener('click', toggleTheme);
-
-// Intersection Observer for animations
-const animatedElements = document.querySelectorAll('.animate-up');
-let delay = 0;
+// Intersection Observer for animated elements
+const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px'
+};
 
 const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
+    entries.forEach(entry => {
         if (entry.isIntersecting) {
-            entry.target.style.animationDelay = `${delay}s`;
-            entry.target.style.animationPlayState = 'running';
-            delay += 0.2;
+            entry.target.classList.add('animate__animated', 'animate__fadeInUp');
             observer.unobserve(entry.target);
         }
     });
-}, {
-    threshold: 0.1
+}, observerOptions);
+
+// Observe all feature boxes and content sections
+document.querySelectorAll('.feature-box, .content h2, .content h3, .stat-item').forEach(el => {
+    observer.observe(el);
 });
 
-animatedElements.forEach((element) => {
-    element.style.animationPlayState = 'paused';
-    observer.observe(element);
-});
+// Mobile menu toggle
+const createMobileMenu = () => {
+    const header = document.querySelector('.header');
+    const nav = document.querySelector('nav');
+    const menuButton = document.createElement('button');
+    menuButton.classList.add('menu-toggle');
+    menuButton.innerHTML = '☰';
+    menuButton.style.display = 'none';
 
-// Mobile Navigation
-const mobileNav = document.querySelector('.main-nav');
-const mobileNavToggle = document.createElement('button');
-mobileNavToggle.classList.add('mobile-nav-toggle');
-mobileNavToggle.innerHTML = `
-    <svg viewBox="0 0 24 24" width="24" height="24">
-        <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-    </svg>
-`;
+    header.insertBefore(menuButton, nav);
 
-document.querySelector('.header-container').insertBefore(mobileNavToggle, mobileNav);
+    menuButton.addEventListener('click', () => {
+        nav.classList.toggle('active');
+    });
 
-mobileNavToggle.addEventListener('click', () => {
-    mobileNav.classList.toggle('active');
-});
+    // Responsive menu handling
+    const checkWidth = () => {
+        if (window.innerWidth <= 768) {
+            menuButton.style.display = 'block';
+            nav.classList.add('mobile');
+        } else {
+            menuButton.style.display = 'none';
+            nav.classList.remove('mobile', 'active');
+        }
+    };
 
-// Smooth Scrolling
+    window.addEventListener('resize', checkWidth);
+    checkWidth();
+};
+
+createMobileMenu();
+
+// Smooth scroll for navigation links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
         e.preventDefault();
@@ -60,3 +63,58 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         }
     });
 });
+
+// Add scroll-based animations
+window.addEventListener('scroll', () => {
+    const scrolled = window.scrollY;
+    const header = document.querySelector('.header');
+    
+    if (scrolled > 50) {
+        header.style.background = 'rgba(0, 100, 0, 0.95)';
+        header.style.backdropFilter = 'blur(10px)';
+    } else {
+        header.style.background = 'rgba(0, 100, 0, 0.8)';
+        header.style.backdropFilter = 'blur(10px)';
+    }
+});
+
+// Animate statistics when in view
+const animateStats = () => {
+    const stats = document.querySelectorAll('.stat-number');
+    stats.forEach(stat => {
+        const target = parseFloat(stat.textContent.replace(/[^0-9.]/g, ''));
+        let current = 0;
+        const increment = target / 100;
+        const duration = 2000; // 2 seconds
+        const stepTime = duration / 100;
+
+        const updateStat = () => {
+            current += increment;
+            if (current <= target) {
+                if (stat.textContent.includes('$')) {
+                    stat.textContent = `$${Math.round(current)}B+`;
+                } else if (stat.textContent.includes('%')) {
+                    stat.textContent = `${current.toFixed(2)}%`;
+                } else if (stat.textContent.includes('/')) {
+                    stat.textContent = '24/7';
+                } else {
+                    stat.textContent = `${Math.round(current)}M+`;
+                }
+                setTimeout(updateStat, stepTime);
+            }
+        };
+
+        const statObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    updateStat();
+                    statObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        statObserver.observe(stat);
+    });
+};
+
+animateStats();
